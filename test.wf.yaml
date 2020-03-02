@@ -1,0 +1,7 @@
+---
+version: '2.0'
+
+test_wf:
+  tasks:
+    echo_task:
+      action: std.echo output="Hello"

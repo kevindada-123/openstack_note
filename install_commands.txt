@@ -1,0 +1,430 @@
+# interfaces(5) file used by ifup(8) and ifdown(8)
+auto lo
+iface lo inet loopback
+#The managment network interface
+auto ens33
+iface ens33 inet dhcp
+#The public network interface
+auto ens34
+iface ens34 inet manual
+up ip link set dev $IFACE up
+down ip link set dev $IFACE down
+
+192.168.121.132       controller
+192.168.121.131       compute
+
+
+sudo apt install software-properties-common -y
+sudo add-apt-repository cloud-archive:newton -y
+sudo apt-get update && apt-get dist-upgrade -y
+
+sudo reboot
+sudo apt install python-openstackclient -y
+
+page 27
+apt-get install mariadb-server python-pymysql
+vim /etc/mysql/mariadb.conf.d/99-openstack.cnf
+[mysqld]
+bind-address = 192.168.121.132
+default-storage-engine = innodb
+innodb_file_per_table
+max_connections = 4096
+collation-server = utf8_general_ci
+character-set-server = utf8
+
+service mysql restart
+mysql_secure_installation 
+
+page 28
+apt-get install rabbitmq-server
+rabbitmqctl add_user openstack frank1995
+rabbitmqctl set_permissions openstack ".*" ".*" ".*"
+
+page 29
+apt-get install memcached python-memcache
+vim /etc/memcached.conf
+-l 192.168.121.131
+
+service memcached restart
+
+page 30
+mysql –u root -p
+CREATE DATABASE keystone;
+GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' \
+  IDENTIFIED BY 'frank1995';
+GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' \
+  IDENTIFIED BY 'frank1995';
+
+page 32
+apt install keystone
+vim /etc/keystone/keystone.conf
+[database]
+connection = mysql+pymysql://keystone:frank1995@controller/keystone
+page 33
+[token]
+provider = fernet
+su -s /bin/sh -c "keystone-manage db_sync" keystone
+keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
+
+keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
+page 34
+keystone-manage bootstrap --bootstrap-password frank1995 \
+  --bootstrap-admin-url http://controller:5000/v3/ \
+  --bootstrap-internal-url http://controller:5000/v3/ \
+  --bootstrap-public-url http://controller:5000/v3/ \
+  --bootstrap-region-id RegionOne
+20190923 port 從 35357改成5000 
+
+
+page 36
+export OS_USERNAME=admin
+export OS_PASSWORD=frank1995
+export OS_PROJECT_NAME=admin
+export OS_USER_DOMAIN_NAME=Default
+export OS_PROJECT_DOMAIN_NAME=Default
+export OS_AUTH_URL=http://controller:5000/v3
+export OS_IDENTITY_API_VERSION=3
+
+openstack project create --domain default \ --description "Service Project" service
+
+openstack project create --domain default \
+--description "Service Project" service
+
+page 42
+openstack --os-auth-url http://controller:5000/v3 \
+  --os-project-domain-name Default --os-user-domain-name Default \
+  --os-project-name admin --os-username admin token issue
+  
+openstack --os-auth-url http://controller:5000/v3 --os-project-domain-name default --os-user-domain-name default --os-project-name demo --os-username demo token issue
+  
+  
+page 43
+vim admin-openrc
+export OS_PROJECT_DOMAIN_NAME=Default
+export OS_USER_DOMAIN_NAME=Default
+export OS_PROJECT_NAME=admin
+export OS_USERNAME=admin
+export OS_PASSWORD=frank1995
+export OS_AUTH_URL=http://controller:5000/v3
+export OS_IDENTITY_API_VERSION=3
+export OS_IMAGE_API_VERSION=2
+
+vim demo-openrc
+export OS_PROJECT_DOMAIN_NAME=Default
+export OS_USER_DOMAIN_NAME=Default
+export OS_PROJECT_NAME=demo
+export OS_USERNAME=demo
+export OS_PASSWORD=frank1995
+export OS_AUTH_URL=http://controller:5000/v3
+export OS_IDENTITY_API_VERSION=3
+export OS_IMAGE_API_VERSION=2
+
+page 47
+$ mysql -u root -p
+CREATE DATABASE glance;
+GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'localhost' IDENTIFIED BY 'frank1995';
+GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' \
+  IDENTIFIED BY 'frank1995';
+exit
+
+page 50
+gedit /etc/glance/glance-api.conf
+[database]
+connection = mysql+pymysql://glance:frank1995@controller/glance
+
+[keystone_authtoken]
+auth_uri = http://controller:5000
+auth_url = http://controller:5000
+memcached_servers = controller:11211
+auth_type = password
+project_domain_name = Default
+user_domain_name = Default
+project_name = service
+username = glance
+password = frank1995
+
+[paste_deploy]
+flavor = keystone
+
+[glance_store]
+stores = file,http
+default_store = file
+filesystem_store_datadir = /var/lib/glance/images/
+
+page 51 
+gedit /etc/glance/glance-registry.conf
+[database]
+connection = mysql+pymysql://glance:frank1995@controller/glance
+
+[keystone_authtoken]
+auth_uri = http://controller:5000
+auth_url = http://controller:5000
+memcached_servers = controller:11211
+auth_type = password
+project_domain_name = Default
+user_domain_name = Default
+project_name = service
+username = glance
+password = frank1995
+
+[paste_deploy]
+flavor = keystone
+
+page 56
+CREATE DATABASE nova_api;
+CREATE DATABASE nova;
+GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'localhost' \
+  IDENTIFIED BY 'frank1995';
+GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'%' \
+  IDENTIFIED BY 'frank1995';
+GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'localhost' \
+  IDENTIFIED BY 'frank1995';
+GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' \
+  IDENTIFIED BY 'frank1995';
+ 
+////////////////////////////////////////////////////////////////////// 網路參考資料
+GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'localhost' IDENTIFIED BY 'frank1995';
+
+GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'%' IDENTIFIED BY 'frank1995';
+
+GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'localhost' IDENTIFIED BY 'frank1995';
+
+GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY 'frank1995';
+
+GRANT ALL PRIVILEGES ON nova_placement.* TO 'nova'@'localhost' IDENTIFIED BY 'frank1995';
+
+GRANT ALL PRIVILEGES ON nova_placement.* TO 'nova'@'%' IDENTIFIED BY 'frank1995';
+
+GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'localhost' IDENTIFIED BY 'frank1995';
+
+GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'%' IDENTIFIED BY 'frank1995'; 
+////////////////////////////////////////////////////////////////////// 
+
+
+
+page 58
+. admin-openrc
+
+openstack user create --domain default \
+  --password-prompt nova
+  
+openstack role add --project service --user nova admin
+
+openstack service create --name nova \
+  --description "OpenStack Compute" compute
+
+openstack endpoint create --region RegionOne compute public http://controller:5000/v2.1
+
+openstack endpoint create --region RegionOne compute internal http://controller:5000/v2.1
+
+openstack endpoint create --region RegionOne compute admin http://controller:5000/v2.1
+
+//////////////////////////////////////////////////////////////////////////////
+openstack endpoint create --region RegionOne compute public http://controller:5000/v2.1/%\(tenant_id\)s
+
+openstack endpoint create --region RegionOne compute internal http://controller:5000/v2.1/%\(tenant_id\)s
+
+openstack endpoint create --region RegionOne compute admin http://controller:5000/v2.1/%\(tenant_id\)s
+
+//////////////////////////////////////////////////////////////////////////////
+page 59
+gedit /etc/nova/nova.conf
+
+
+[DEFAULT]
+# define own IP
+my_ip = 192.168.121.131
+state_path = /var/lib/nova
+enabled_apis = osapi_compute,metadata
+#log_dir = /var/log/nova 註解
+# RabbitMQ connection info
+transport_url = rabbit://openstack:frank1995@controller
+
+[api]
+auth_strategy = keystone
+
+# Glance connection info
+[glance]
+api_servers = http://controller:9292
+
+[oslo_concurrency]
+lock_path = $state_path/tmp
+
+# MariaDB connection info
+[api_database]
+connection = mysql+pymysql://nova:frank1995@controller/nova_api
+
+[database]
+connection = mysql+pymysql://nova:frank1995@controller/nova
+
+# Keystone auth info
+[keystone_authtoken]
+www_authenticate_uri = http://controller:5000
+auth_url = http://controller:5000
+memcached_servers = controller:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = nova
+password = frank1995
+
+[placement]
+auth_url = http://controller:5000
+os_region_name = RegionOne
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = placement
+password = frank1995
+
+[placement_database]
+connection = mysql+pymysql://nova:frank1995@controller/nova_placement
+
+[wsgi]
+api_paste_config = /etc/nova/api-paste.ini
+/////////////////////////////////////////////////////////////
+page 60
+[api_database]
+...
+connection = mysql+pymysql://nova:frank1995@controller/nova_api
+
+[database]
+...
+connection = mysql+pymysql://nova:frank1995@controller/nova
+/////////////////////////////////////////////////////////////
+page 59 #這裡我用網頁的安裝步驟沒用ppt的安裝步驟
+[DEFAULT] #remove the logdir option 
+transport_url = rabbit://openstack:frank1995@controller
+auth_strategy = keystone
+my_ip = 192.168.121.131
+use_neutron = True
+firewall_driver = nova.virt.firewall.NoopFirewallDriver
+/////////////////////////////////////////////////////////////
+20190926 14:14 註解
+https://docs.openstack.org/newton/install-guide-ubuntu/nova-controller-install.html
+[DEFAULT]
+auth_strategy = keystone
+
+https://www.voidking.com/dev-ubuntu16-manual-openstack-nova/
+[api]
+auth_strategy = keystone
+
+/////////////////////////////////////////////////////////////
+
+page 61 #auth_url = http://controller:35357 port 改成5000
+[keystone_authtoken] #註解掉[keystone_authtoken] section中其他設定
+auth_uri = http://controller:5000
+auth_url = http://controller:5000
+memcached_servers = controller:11211
+auth_type = password
+project_domain_name = Default
+user_domain_name = Default
+project_name = service
+username = nova
+password = frank1995
+/////////////////////////////////////////////////////////////
+page 62
+su -s /bin/sh -c "nova-manage api_db sync" nova
+#自己添加
+su -s /bin/sh -c "nova-manage cell_v2 map_cell0" nova
+su -s /bin/sh -c "nova-manage db sync" nova
+#自己添加
+su -s /bin/sh -c "nova-manage cell_v2 create_cell --name cell1" nova
+/////////////////////////////////////////////////////////////
+https://www.voidking.com/dev-ubuntu16-manual-openstack-nova/
+安装配置组件
+5、生成数据库表结构
+su -s /bin/bash nova -c "nova-manage api_db sync"
+su -s /bin/bash nova -c "nova-manage cell_v2 map_cell0"
+su -s /bin/bash nova -c "nova-manage db sync"
+su -s /bin/bash nova -c "nova-manage cell_v2 create_cell --name cell1"
+
+/////////////////////////////////////////////////////////////
+page 63
+[DEFAULT] #remove the logdir option
+...
+transport_url = rabbit://openstack:frank1995@controller
+auth_strategy = keystone
+my_ip = 192.168.121.132
+use_neutron = True
+firewall_driver = nova.virt.firewall.NoopFirewallDriver
+
+page 64
+auth_uri = http://controller:5000
+auth_url = http://controller:5000
+memcached_servers = controller:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = nova
+password = frank1995
+
+page 65
+在10337行
+[vnc]
+...
+enabled = True
+vncserver_listen = 0.0.0.0
+vncserver_proxyclient_address = $my_ip
+novncproxy_base_url = http://controller:6080/vnc_auto.html
+
+page 67
+openstack compute service list
+
+
+/////////////////////////////////
+compute node
+##############
+[DEFAULT]
+# define own IP address
+my_ip = 192.168.121.132
+state_path = /var/lib/nova
+enabled_apis = osapi_compute,metadata
+log_dir = /var/log/nova
+# RabbitMQ connection info
+transport_url = rabbit://openstack:frank1995@controller
+
+[api]
+auth_strategy = keystone
+
+# enable VNC
+[vnc]
+enabled = True
+server_listen = 0.0.0.0
+server_proxyclient_address = $my_ip
+novncproxy_base_url = http://controller:6080/vnc_auto.html
+
+# Glance connection info
+[glance]
+api_servers = http://controller:9292
+
+[oslo_concurrency]
+lock_path = $state_path/tmp
+
+# Keystone auth info
+[keystone_authtoken]
+www_authenticate_uri = http://controller:5000
+auth_url = http://controller:5000
+memcached_servers = controller:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = nova
+password = frank1995
+
+[placement]
+auth_url = http://controller:5000
+os_region_name = RegionOne
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = placement
+password = frank1995
+
+[wsgi]
+api_paste_config = /etc/nova/api-paste.ini

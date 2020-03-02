@@ -1,0 +1,1 @@
+sudo mistral-server --server all --config-file /etc/mistral/mistral.conf
