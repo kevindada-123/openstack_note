@@ -1,0 +1,44 @@
+#cloud-config
+hostname: u1404test011
+user: ubuntu
+password: mima
+chpasswd: { expire: False }
+ssh_pwauth: True
+growpart:
+  mode: auto
+  devices: ['/']
+locale: en_US.UTF-8
+timezone: Asia/Taipei
+write_files:
+-   encoding: b64
+    content: U0VMSU5VWD1kaXNhYmxlZApTRUxJTlVYVFlQRT10YXJnZXRlZCAK
+    owner: root:root
+    path: /etc/selinux/config
+    permissions: '0644'
+disk_setup:
+   /dev/vdb:
+       table_type: 'mbr'
+       layout: True
+       overwrite: True
+fs_setup:
+   - label: 'swap'
+     filesystem: 'swap'
+     device: '/dev/vdb1'
+mounts:
+ - [ '/dev/vdb1', 'none', 'swap', 'sw', '0', '0' ]
+bootcmd:
+ - ifdown eth0
+ - ifup eth0
+package_upgrade: true
+packages:
+ - pwgen
+ - wget
+ - screen
+ - vim
+runcmd:
+  - [ yum, -y, remove, cloud-init ]
+  - [ yum, -y, remove, cloud-utils-growpart ]
+power_state:
+  delay: "+1"
+  mode: reboot
+  message: Initial configuration done by cloud-init, forcing reboot to apply changes.
