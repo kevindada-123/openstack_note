@@ -1,0 +1,15 @@
+packstack
+controller 192.168.58.165
+compute1 192.168.58.167
+
+已更改hostname
+指定ip之前
+
+controller
+nmcli connection modify ens33 ipv4.addresses 192.168.58.165/24 ipv4.gateway 192.168.58.2 ipv4.dns 8.8.8.8 ipv4.method manual
+
+compute1
+nmcli connection modify ens33 ipv4.addresses 192.168.58.167/24 ipv4.gateway 192.168.58.2 ipv4.dns 8.8.8.8 ipv4.method manual
+
+systemctl stop NetworkManager
+systemctl disable NetworkManager
