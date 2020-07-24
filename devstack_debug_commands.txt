@@ -1,0 +1,8 @@
+sudo systemctl restart devstack@aodh*
+sudo systemctl restart devstack@ceilometer*
+sudo systemctl restart devstack@gnocchi*
+
+pip install git+git://github.com/esnme/ultrajson.git
+pip install --upgrade virtualenv
+pip install --upgrade pip
+virtualenv /opt/stack/requirements/.venv
