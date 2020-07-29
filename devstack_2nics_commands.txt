@@ -1,0 +1,10 @@
+auto ens34
+iface ens34 inet manual
+up ifconfig $IFACE 0.0.0.0 up
+down ifconfig $IFACE 0.0.0.0 down
+
+sudo ovs-vsctl add-br br-ex
+sudo ovs-vsctl add-port br-ex ens34
+sudo ovs-vsctl show
+
+sudo iptables -t nat -A POSTROUTING -o ens33 -j MASQUERADE
