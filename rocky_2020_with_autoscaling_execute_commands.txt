@@ -1,0 +1,34 @@
+vm 開機後幾分鐘後下指令
+service nova-api restart
+service neutron-server restart
+service neutron-linuxbridge-agent restart
+service neutron-dhcp-agent restart
+service neutron-metadata-agent restart
+service neutron-l3-agent restart
+
+再下
+. admin-openrc
+neutron agent-list
+應該是l3-agent第一次開機後無法正常運作 需要重啟才能正常運作
+
+#開機後要跑的幾個terminal
+# 1.mistral server
+mistral-server --server all --config-file /etc/mistral/mistral.conf
+
+# 2.tacker server
+sudo python /usr/local/bin/tacker-server \
+--config-file /usr/local/etc/tacker/tacker.conf \
+--log-file /var/log/tacker/tacker.log
+
+# 3.tacker conductor
+sudo python /usr/local/bin/tacker-conductor \
+--config-file /usr/local/etc/tacker/tacker.conf \
+--log-file /var/log/tacker/tacker-conductor.log
+
+#若停留在insufficient data嘗試重啟服務
+#(controller node)
+service ceilometer-agent-central restart
+service ceilometer-agent-notification restart
+service gnocchi-metricd restart
+#(compute node)
+service ceilometer-agent-compute restart
